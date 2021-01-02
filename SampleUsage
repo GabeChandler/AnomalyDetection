@@ -1,0 +1,11 @@
+## data lives on 6-dimensional hyperplane embedded in 100 space, except the 100th observation.  
+set.seed(47)
+n <- 100
+d <- 100
+d.low <- 6
+data.low <- matrix(rnorm(n*d.low), ncol=d.low)
+lin.t <- matrix(runif(d*d.low,-1,1), nrow=d.low)
+data.6 <- data.low %*% lin.t
+data.6[n,] <- data.6[n,] + rnorm(d,0,1)
+dqf.6 <- dqf.outlier(data.6, range=30)
+dqf.explore(dqf.6)
