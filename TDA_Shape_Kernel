@@ -207,7 +207,7 @@ import numpy as np
 import cechmate as cm
 import math
 
-t = 1  #using time parameter of 3 currently
+t = 3  #using time parameter of 3 currently
 
 pd0 = []
 pd1 = []
