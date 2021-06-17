@@ -49,7 +49,7 @@ def pssk(A, B, sigma: float) -> float :
         for j in range(len(B)) :
             left = -1/(8*sigma) * ((A[i][0]-B[j][0])**2 + (A[i][1]-B[j][1])**2) 
             right = -1/(8*sigma) * ((A[i][0]-B[j][1])**2 + (A[i][1]-B[j][0])**2)
-            ps += math.exp(left) + math.exp(right)
+            ps += math.exp(left) - math.exp(right)
     return ps / (8 * math.pi * sigma)
 ```
 
