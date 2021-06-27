@@ -198,7 +198,7 @@ for i in range(300) :
 
 Now that we have the necessary .off files, we compute the HKS (heat kernel signature) for a subset of them.  In this case, mesh 39 through 59 (mesh 40-59 all correspond to the same body). Note that these are stored in a different directory (./SHREC14/OFF_Data) from the hks.py directory, which should now be the current directory.  
 ```{bash}
-for i in {39..59}; do python hks.py --input ./SHREC14/OFF_Data/${i}.off --t 3 --output ./SHREC14/OFF_Data/syn${i}_3.off; done
+for i in {39..59}; do python hks.py --input ./SHREC14/OFF_Data/${i}.off --t 500 --output ./SHREC14/OFF_Data/syn${i}_500.off; done
 ```
 
 Now that we have the hks, we can compute the filtration and corresponding persistence diagram. Note: we are again in the directory containing the hks'd .off files. 
@@ -207,7 +207,7 @@ import numpy as np
 import cechmate as cm
 import math
 
-t = 3  #using time parameter of 3 currently
+t = 500 #using time parameter of 500 currently
 
 pd0 = []
 pd1 = []
