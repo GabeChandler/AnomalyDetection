@@ -196,9 +196,9 @@ for i in range(300) :
     conv_obj(file)
 ```
 
-Now that we have the necessary .off files, we compute the HKS (heat kernel signature) for a subset of them.  In this case, mesh 39 through 59 (mesh 40-59 all correspond to the same body). Note that these are stored in a different directory (./SHREC14/OFF_Data) from the hks.py directory, which should now be the current directory.  
+Now that we have the necessary .off files, we compute the HKS (heat kernel signature) for a subset of them.  In this case, mesh 0 through 20 (mesh 0-19 all correspond to the same body). Note that these are stored in a different directory (./SHREC14/OFF_Data) from the hks.py directory, which should now be the current directory.  
 ```{bash}
-for i in {39..59}; do python hks.py --input ./SHREC14/OFF_Data/${i}.off --t 500 --output ./SHREC14/OFF_Data/syn${i}_500.off; done
+for i in {0..20}; do python hks.py --input ./SHREC14/OFF_Data/${i}.off --t 500 --output ./SHREC14/OFF_Data/syn${i}_500.off; done
 ```
 
 Now that we have the hks, we can compute the filtration and corresponding persistence diagram. Note: we are again in the directory containing the hks'd .off files. 
@@ -212,7 +212,7 @@ t = 500 #using time parameter of 500 currently
 pd0 = []
 pd1 = []
 
-for ifile in range(39, 60) :
+for ifile in range(0, 20) :
     file = "syn" + str(ifile) + "_" + str(t) + ".off"
     x = open(file)
     print(file)
