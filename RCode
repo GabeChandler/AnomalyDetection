@@ -4,7 +4,7 @@ sd.w <- function(x, k) {
   ## k: (integer) number of observations at each extreme to alter
   ## x: (vector) numeric data values
   k <- floor(k)
-  if (k == 0) {  #corresponds to non-adaptive DQF
+  if (k == 0) {  #corresponds to non-robust adaptive DQF
     return(sd(x))
   } else {
     x <- sort(x)
@@ -27,23 +27,31 @@ subsamp.dqf <- function(n.obs, subsample) {
   return(pairs)
 }
 
-dqf.outlier <- function(data, kernel="linear", range=2, angle=c(30,45,60), p1=1, p2=0, n.splits=100, subsample=50, z.scale=TRUE, k.w=3) {
+dqf.outlier <- function(data, kernel="linear", range=2, angle=c(30,45,60), p1=1, p2=0, n.splits=100, subsample=50, z.scale=TRUE, k.w=3, adaptive=TRUE, G="norm", param=1) {
   # kernelized version of depthity
   # 
   # inputs: 
   #   data (matrix or data frame) - a data matrix of explanetory variables
-  #   kern - a kernel function (of form "linear", "rbf" or "poly", or a function)
+  #   kernel - of form "linear", "rbf" or "poly", or a user defined function 
   #   range (scalar) - scalar multiple for how far the split point should extend from the anchor point
-  #   angle (vector)- angle of cone from midline
+  #   angle (numeric vector of length 3)- angles of cone from midline, must live between 0 and 90
   #   p1 - first parameter for kernel
   #   p2 - second parameter for kernel
   #   n.splits (integer) - the number of split points at which the DQF is computed
   #   subsample (integer)- the number of random pairs for each observation
   #   z.scale (logical) - should the data be z-scaled first
   #   k.w (integer) - the number of points altered in the windsorized standard deviation
+  #   adaptive - if TRUE, uses windsorized standard deviation to scale base distribution
+  #   G - base distribution:   "norm" or "unif"
   # returns:
-  #   angle - 3-vector of angles used 
-  #   dqf1, dqf2, dqf3 - matricies of depth quanitle functions, rows are observations
+  #   angle  - vector of angles used, same as inputted
+  #   dqf1, dqf2, dqf3 - matrices of depth quantile functions, rows are observations
+  if (G=="norm") 
+    param1 <- 0; param2 <- 1
+  if (G=="unif")
+    param1 <- -1; param2 <- 1
+  if (min(angle) < 0 | max(angle)>90) 
+    stop("Angles must be between 0 and 90")
   if (z.scale==TRUE)
     data <- apply(data, 2, scale) #z-scale data
   if (is.function(kernel)==TRUE)
@@ -69,7 +77,7 @@ dqf.outlier <- function(data, kernel="linear", range=2, angle=c(30,45,60), p1=1,
       gram[j,i] <- gram[i,j]
     }
   }
-  splits <- qnorm((1:100)/101)* range #seq(-range,range,length.out=n.splits)
+  splits <- get(paste("q", G, sep=""))((1:n.splits)/(n.splits+1),param1, param2) * range 
   depthity1 <- rep(0,length(splits))
   depthity2 <- rep(0,length(splits))
   depthity3 <- rep(0,length(splits))
@@ -93,7 +101,7 @@ dqf.outlier <- function(data, kernel="linear", range=2, angle=c(30,45,60), p1=1,
     }
     for (c in 1:length(splits)) {
       good <- rep(1, nrow(data))
-      s <- splits[c] * sd.w(k.to.mid, k.w)
+      s <- splits[c] * (sd.w(k.to.mid, k.w)*adaptive + (adaptive==FALSE)) 
       good[k.to.mid/s > 1] <- 0  #points on other side of cone tip removed
       d.to.tip <- abs(k.to.mid - s)
       good1 <- good * (abs(atan(error.k / d.to.tip)) < (angle[1]/360*2*pi))  #points outside of cone removed
@@ -141,7 +149,16 @@ dqf.explore <- function(dqfs, show=c()) {
     x <- seq(0,1,length.out=length(y))
     y.hat[i,] <- diff(ksmooth(x,y,kernel="normal", band=.05, n.points=100)$y)
   }
-  plot(c(0,1), c(0,.1), t='n', main="Select Observations - Press ESC when done", xlab="1 of 3", ylab="")
+  plot(c(0,1), c(0,1), t='n', main="Select Observations - Press ESC when done", xlab="1 of 3", ylab="")
+  for (i in 1:nrow(dqfs$dqf)) {
+    lines(seq(0,1,length.out=100), dqfs$dqf[i,]/ (nrow(dqfs$dqf)/2), lwd=.3 + (sum(i==click.points)>0), col=2 + (sum(i==click.points)>0))
+  } 
+  points(cbind(seq(0,1,length.out=100),as.vector(t(dqfs$dqf/(nrow(dqfs$dqf)/2)))), t='n')
+  click.points2 <- identify(cbind(seq(0,1,length.out=100), as.vector(t(dqfs$dqf / (nrow(dqfs$dqf)/2)))))
+  click.points2 <- ceiling(click.points2/100)
+  click.points <- c(click.points, click.points2)
+  # round 2
+  plot(c(0,1), c(0,.1), t='n', main="Select Observations - Press ESC when done", xlab="2 of 3", ylab="")
   for (i in 1:nrow(dqfs$dqf)) {
     lines(seq(0.0,1,length.out=99), y.hat[i,], lwd=.3, col=2)
   } 
@@ -154,15 +171,8 @@ dqf.explore <- function(dqfs, show=c()) {
   points(cbind(seq(0,1,length.out=99),as.vector(t(y.hat))),t='n')
   click.points2 <- identify(cbind(seq(0,1,length.out=99), as.vector(t(y.hat))))
   click.points <- c(click.points, ceiling(click.points2/99))
-  # round 2
-  plot(c(0,1), c(0,1), t='n', main="Select Observations - Press ESC when done", xlab="2 of 3", ylab="")
-  for (i in 1:nrow(dqfs$dqf)) {
-    lines(seq(0,1,length.out=100), dqfs$dqf[i,]/ (nrow(dqfs$dqf)/2), lwd=.3 + (sum(i==click.points)>0), col=2 + (sum(i==click.points)>0))
-  } 
-  points(cbind(seq(0,1,length.out=100),as.vector(t(dqfs$dqf/(nrow(dqfs$dqf)/2)))), t='n')
-  click.points2 <- identify(cbind(seq(0,1,length.out=100), as.vector(t(dqfs$dqf / (nrow(dqfs$dqf)/2)))))
-  click.points2 <- ceiling(click.points2/100)
-  click.points <- c(click.points, click.points2)
+  
+  
   # round 3
   dqf.norm <- dqfs$dqf/apply(dqfs$dqf,1,max)
   plot(c(0,1), c(0,1), t='n', ylab="", main="Select Observations - Press ESC when done", xlab="3 of 3")
