@@ -31,7 +31,7 @@ dqf.outlier <- function(data, kernel="linear", range=2, angle=c(30,45,60), p1=1,
   # kernelized version of depthity
   # 
   # inputs: 
-  #   data (matrix or data frame) - a data matrix of explanetory variables
+  #   data (matrix or data frame) - a data matrix of explanatory variables
   #   kernel - of form "linear", "rbf" or "poly", or a user defined function 
   #   range (scalar) - scalar multiple for how far the split point should extend from the anchor point
   #   angle (numeric vector of length 3)- angles of cone from midline, must live between 0 and 90
