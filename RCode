@@ -150,6 +150,7 @@ dqf.explore <- function(dqfs, show=c()) {
     x <- seq(0,1,length.out=length(y))
     y.hat[i,] <- diff(ksmooth(x,y,kernel="normal", band=.05, n.points=100)$y)
   }
+  # round 1 - q-bar
   plot(c(0,1), c(0,1), t='n', main="Select Observations - Press ESC when done", xlab="1 of 3", ylab="")
   for (i in 1:nrow(dqfs$dqf)) {
     lines(seq(0,1,length.out=100), dqfs$dqf[i,]/ (nrow(dqfs$dqf)/2), lwd=.3 + (sum(i==click.points)>0), col=2 + (sum(i==click.points)>0))
@@ -158,7 +159,7 @@ dqf.explore <- function(dqfs, show=c()) {
   click.points2 <- identify(cbind(seq(0,1,length.out=100), as.vector(t(dqfs$dqf / (nrow(dqfs$dqf)/2)))))
   click.points2 <- ceiling(click.points2/100)
   click.points <- c(click.points, click.points2)
-  # round 2
+  # round 2 - derivative of q-tilde
   plot(c(0,1), c(0,.1), t='n', main="Select Observations - Press ESC when done", xlab="2 of 3", ylab="")
   for (i in 1:nrow(dqfs$dqf)) {
     lines(seq(0.0,1,length.out=99), y.hat[i,], lwd=.3, col=2)
@@ -172,9 +173,7 @@ dqf.explore <- function(dqfs, show=c()) {
   points(cbind(seq(0,1,length.out=99),as.vector(t(y.hat))),t='n')
   click.points2 <- identify(cbind(seq(0,1,length.out=99), as.vector(t(y.hat))))
   click.points <- c(click.points, ceiling(click.points2/99))
-  
-  
-  # round 3
+  # round 3 q-tilde
   dqf.norm <- dqfs$dqf/apply(dqfs$dqf,1,max)
   plot(c(0,1), c(0,1), t='n', ylab="", main="Select Observations - Press ESC when done", xlab="3 of 3")
   for (i in 1:nrow(dqfs$dqf)) {
@@ -187,19 +186,26 @@ dqf.explore <- function(dqfs, show=c()) {
   #finale
   par(mfrow=c(3,3))
   par(mar=c(0,0,0,0))
-  
-  
-  ## First Angle
-  
-  y.hat <- matrix(0, nrow=nrow(dqfs$dqf), ncol=99)
-  for (i in 1:nrow(dqfs$dqf)) {
-    y <- dqfs$dqf1[i,]/ max(dqfs$dqf1[i,])
+  plot.dqf(dqfs$dqf1, dqfs$angle[1], click.points)
+  plot.dqf(dqfs$dqf2, dqfs$angle[2], click.points)
+  plot.dqf(dqfs$dqf3, dqfs$angle[3], click.points)
+  legend(.75,max(y.hat), click.points,1:length(click.points)+2, bty="n")
+  return(click.points)
+}
+ 
+plot.dqf <- function(dqf, angle, click.points) {
+  ## Dependency for dqf.explore
+  ## Creates 3 versions of DQF information
+  n.qs <- ncol(dqf)
+  y.hat <- matrix(0, nrow=nrow(dqf), ncol=99)
+  for (i in 1:nrow(dqf)) {
+    y <- dqf[i,]/ max(dqf[i,])
     x <- seq(0,1,length.out=length(y))
     y.hat[i,] <- diff(ksmooth(x,y,kernel="normal", band=.05, n.points=100)$y)
   }
-  dqf.norm <- dqfs$dqf1/apply(dqfs$dqf1,1,max)
+  dqf.norm <- dqf/apply(dqf,1,max)
   plot(c(0,1), c(0,1), t='n', ylab="", xaxt="n", yaxt="n")
-  for (i in 1:nrow(dqfs$dqf)) {
+  for (i in 1:nrow(dqf)) {
     lines(seq(0,1,length.out=n.qs), dqf.norm[i,], lwd=.3,  col=2)
   } 
   if (length(click.points)>0) {
@@ -208,19 +214,19 @@ dqf.explore <- function(dqfs, show=c()) {
       lines(seq(0,1,length.out=n.qs), dqf.norm[i,], lwd=1,  col=2+j)
     }  
   }
-  legend(.8,.3,dqfs$angle[1], bty="n")
-  plot(c(0,1), c(0,max(dqfs$dqf1/(nrow(dqfs$dqf)/2) )), t='n', ylab="", xaxt="n", yaxt="n")
-  for (i in 1:nrow(dqfs$dqf)) {
-    lines(seq(0,1,length.out=n.qs), dqfs$dqf1[i,]/ (nrow(dqfs$dqf)/2), lwd=.3, col=2)
+  legend(.8,.3,angle, bty="n")
+  plot(c(0,1), c(0,max(dqf/(nrow(dqf)/2) )), t='n', ylab="", xaxt="n", yaxt="n")
+  for (i in 1:nrow(dqf)) {
+    lines(seq(0,1,length.out=n.qs), dqf[i,]/ (nrow(dqf)/2), lwd=.3, col=2)
   } 
   if (length(click.points)>0) {
     for (j in 1:length(click.points)) {
       i <- click.points[j] 
-      lines(seq(0,1,length.out=n.qs), dqfs$dqf1[i,]/ (nrow(dqfs$dqf)/2), lwd=1,  col=2+j)
+      lines(seq(0,1,length.out=n.qs), dqf[i,]/ (nrow(dqf)/2), lwd=1,  col=2+j)
     }  
   }
   plot(c(0,1), c(0,max(y.hat)), t='n', ylab="", xaxt="n", yaxt="n")
-  for (i in 1:nrow(dqfs$dqf)) {
+  for (i in 1:nrow(dqf)) {
     lines(seq(0.0,1,length.out=99), y.hat[i,], lwd=.3, col=2)
   }
   if (length(click.points)>0) {
@@ -228,90 +234,5 @@ dqf.explore <- function(dqfs, show=c()) {
       i <- click.points[j] 
       lines(seq(0,1,length.out=99), y.hat[i,], lwd=1,  col=2+j)
     } 
-    #legend(0,max(y.hat), click.points,1:length(click.points)+2)
-  }  
-  
-  ## Second Angle
-  
-  y.hat <- matrix(0, nrow=nrow(dqfs$dqf2), ncol=99)
-  for (i in 1:nrow(dqfs$dqf)) {
-    y <- dqfs$dqf2[i,]/ max(dqfs$dqf2[i,])
-    x <- seq(0,1,length.out=length(y))
-    y.hat[i,] <- diff(ksmooth(x,y,kernel="normal", band=.05, n.points=100)$y)
-  }
-  dqf.norm <- dqfs$dqf2/apply(dqfs$dqf2,1,max)
-  plot(c(0,1), c(0,1), t='n', ylab="", xaxt="n", yaxt="n")
-  for (i in 1:nrow(dqfs$dqf2)) {
-    lines(seq(0,1,length.out=n.qs), dqf.norm[i,], lwd=.3,  col=2)
-  } 
-  if (length(click.points)>0) {
-    for (j in 1:length(click.points)) {
-      i <- click.points[j] 
-      lines(seq(0,1,length.out=n.qs), dqf.norm[i,], lwd=1,  col=2+j)
-    }  
-  }
-  legend(.8,.3,dqfs$angle[2], bty="n")
-  plot(c(0,1), c(0,max(dqfs$dqf2/(nrow(dqfs$dqf)/2) )), t='n', ylab="", xaxt="n", yaxt="n")
-  for (i in 1:nrow(dqfs$dqf)) {
-    lines(seq(0,1,length.out=n.qs), dqfs$dqf2[i,]/ (nrow(dqfs$dqf)/2), lwd=.3, col=2)
-  } 
-  if (length(click.points)>0) {
-    for (j in 1:length(click.points)) {
-      i <- click.points[j] 
-      lines(seq(0,1,length.out=n.qs), dqfs$dqf2[i,]/ (nrow(dqfs$dqf)/2), lwd=1,  col=2+j)
-    }  
-  }
-  plot(c(0,1), c(0,max(y.hat)), t='n', ylab="", xaxt="n", yaxt="n")
-  for (i in 1:nrow(dqfs$dqf2)) {
-    lines(seq(0.0,1,length.out=99), y.hat[i,], lwd=.3, col=2)
-  }
-  if (length(click.points)>0) {
-    for (j in 1:length(click.points)) {
-      i <- click.points[j] 
-      lines(seq(0,1,length.out=99), y.hat[i,], lwd=1,  col=2+j)
-    } 
-    #legend(0,max(y.hat), click.points,1:length(click.points)+2)
-  }  
-  ## Third Angle
-  
-  dqf.norm <- dqfs$dqf3/apply(dqfs$dqf3,1,max)
-  y.hat <- matrix(0, nrow=nrow(dqfs$dqf), ncol=99)
-  for (i in 1:nrow(dqfs$dqf)) {
-    y <- dqfs$dqf3[i,]/ max(dqfs$dqf3[i,])
-    x <- seq(0,1,length.out=length(y))
-    y.hat[i,] <- diff(ksmooth(x,y,kernel="normal", band=.05, n.points=100)$y)
-  }
-  plot(c(0,1), c(0,1), t='n', ylab="", xaxt="n", yaxt="n")
-  for (i in 1:nrow(dqfs$dqf)) {
-    lines(seq(0,1,length.out=n.qs), dqf.norm[i,], lwd=.3,  col=2)
-  } 
-  if (length(click.points)>0) {
-    for (j in 1:length(click.points)) {
-      i <- click.points[j] 
-      lines(seq(0,1,length.out=n.qs), dqf.norm[i,], lwd=1,  col=2+j)
-    }  
-  }
-  legend(.8,.3,dqfs$angle[3], bty="n")
-  plot(c(0,1), c(0,max(dqfs$dqf3/(nrow(dqfs$dqf)/2) )), t='n', ylab="", xaxt="n", yaxt="n")
-  for (i in 1:nrow(dqfs$dqf)) {
-    lines(seq(0,1,length.out=n.qs), dqfs$dqf3[i,]/ (nrow(dqfs$dqf)/2), lwd=.3, col=2)
-  } 
-  if (length(click.points)>0) {
-    for (j in 1:length(click.points)) {
-      i <- click.points[j] 
-      lines(seq(0,1,length.out=n.qs), dqfs$dqf3[i,]/ (nrow(dqfs$dqf)/2), lwd=1,  col=2+j)
-    }  
-  }
-  plot(c(0,1), c(0,max(y.hat)), t='n', ylab="", xaxt="n", yaxt="n")
-  for (i in 1:nrow(dqfs$dqf)) {
-    lines(seq(0.0,1,length.out=99), y.hat[i,], lwd=.3, col=2)
-  }
-  if (length(click.points)>0) {
-    for (j in 1:length(click.points)) {
-      i <- click.points[j] 
-      lines(seq(0,1,length.out=99), y.hat[i,], lwd=1,  col=2+j)
-    } 
-    legend(.75,max(y.hat), click.points,1:length(click.points)+2, bty="n")
-    return(click.points)
-  }
+   }
 }
