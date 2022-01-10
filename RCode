@@ -28,7 +28,7 @@ subsamp.dqf <- function(n.obs, subsample) {
 }
 
 dqf.outlier <- function(data, kernel="linear", range=2, angle=c(30,45,60), p1=1, p2=0, n.splits=100, subsample=50, z.scale=TRUE, k.w=3, adaptive=TRUE, G="norm") {
-  # computes DQF for anomaly detection with Euclidean data
+  # kernelized version of depthity
   # 
   # inputs: 
   #   data (matrix or data frame) - a data matrix of explanetory variables
@@ -140,7 +140,7 @@ dqf.explore <- function(dqfs, show=c()) {
   # inputs:
   ## dqfs - object created by dqf.outlier
   ## show - vector of observations to highlight
-  names(dqfs)[3] <- "dqf"
+  dqfs$dqf <- dqfs$dqf2
   click.points <- show
   n.qs <- ncol(dqfs$dqf)
   par(mfrow=c(1,1))
@@ -233,15 +233,15 @@ dqf.explore <- function(dqfs, show=c()) {
   
   ## Second Angle
   
-  y.hat <- matrix(0, nrow=nrow(dqfs$dqf), ncol=99)
+  y.hat <- matrix(0, nrow=nrow(dqfs$dqf2), ncol=99)
   for (i in 1:nrow(dqfs$dqf)) {
-    y <- dqfs$dqf[i,]/ max(dqfs$dqf[i,])
+    y <- dqfs$dqf2[i,]/ max(dqfs$dqf2[i,])
     x <- seq(0,1,length.out=length(y))
     y.hat[i,] <- diff(ksmooth(x,y,kernel="normal", band=.05, n.points=100)$y)
   }
-  dqf.norm <- dqfs$dqf/apply(dqfs$dqf,1,max)
+  dqf.norm <- dqfs$dqf2/apply(dqfs$dqf2,1,max)
   plot(c(0,1), c(0,1), t='n', ylab="", xaxt="n", yaxt="n")
-  for (i in 1:nrow(dqfs$dqf)) {
+  for (i in 1:nrow(dqfs$dqf2)) {
     lines(seq(0,1,length.out=n.qs), dqf.norm[i,], lwd=.3,  col=2)
   } 
   if (length(click.points)>0) {
@@ -251,18 +251,18 @@ dqf.explore <- function(dqfs, show=c()) {
     }  
   }
   legend(.8,.3,dqfs$angle[2], bty="n")
-  plot(c(0,1), c(0,max(dqfs$dqf/(nrow(dqfs$dqf)/2) )), t='n', ylab="", xaxt="n", yaxt="n")
+  plot(c(0,1), c(0,max(dqfs$dqf2/(nrow(dqfs$dqf)/2) )), t='n', ylab="", xaxt="n", yaxt="n")
   for (i in 1:nrow(dqfs$dqf)) {
-    lines(seq(0,1,length.out=n.qs), dqfs$dqf[i,]/ (nrow(dqfs$dqf)/2), lwd=.3, col=2)
+    lines(seq(0,1,length.out=n.qs), dqfs$dqf2[i,]/ (nrow(dqfs$dqf)/2), lwd=.3, col=2)
   } 
   if (length(click.points)>0) {
     for (j in 1:length(click.points)) {
       i <- click.points[j] 
-      lines(seq(0,1,length.out=n.qs), dqfs$dqf[i,]/ (nrow(dqfs$dqf)/2), lwd=1,  col=2+j)
+      lines(seq(0,1,length.out=n.qs), dqfs$dqf2[i,]/ (nrow(dqfs$dqf)/2), lwd=1,  col=2+j)
     }  
   }
   plot(c(0,1), c(0,max(y.hat)), t='n', ylab="", xaxt="n", yaxt="n")
-  for (i in 1:nrow(dqfs$dqf)) {
+  for (i in 1:nrow(dqfs$dqf2)) {
     lines(seq(0.0,1,length.out=99), y.hat[i,], lwd=.3, col=2)
   }
   if (length(click.points)>0) {
